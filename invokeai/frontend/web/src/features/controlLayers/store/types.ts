@@ -23,6 +23,7 @@ const zServerValidatedModelIdentifierField = zModelIdentifierField.refine(async 
   }
 });
 
+
 const zImageWithDims = z
   .object({
     image_name: z.string(),
@@ -54,7 +55,7 @@ const zIPMethodV2 = z.enum(['full', 'style', 'composition']);
 export type IPMethodV2 = z.infer<typeof zIPMethodV2>;
 export const isIPMethodV2 = (v: unknown): v is IPMethodV2 => zIPMethodV2.safeParse(v).success;
 
-const zTool = z.enum(['brush', 'eraser', 'move', 'rect', 'view', 'bbox', 'colorPicker']);
+const zTool = z.enum(['brush', 'eraser', 'move', 'rect', 'view', 'bbox', 'colorPicker', 'text']);
 export type Tool = z.infer<typeof zTool>;
 
 const zPoints = z.array(z.number()).refine((points) => points.length % 2 === 0, {
@@ -257,6 +258,19 @@ const zRegionalGuidanceReferenceImageState = z.object({
 });
 export type RegionalGuidanceReferenceImageState = z.infer<typeof zRegionalGuidanceReferenceImageState>;
 
+const zCanvasTextLayerState = zCanvasEntityBase.extend({
+  type: z.literal('text_layer'),
+  text: z.string(),
+  fontFamily: z.string(),
+  fontSize: z.number().min(1),
+  fontStyle: z.string(),
+  fill: zRgbaColor,
+  position: z.object({ x: z.number(), y: z.number() }),
+  opacity: z.number().gte(0).lte(1),
+});
+export type CanvasTextLayerState = z.infer<typeof zCanvasTextLayerState>;
+
+
 const zCanvasRegionalGuidanceState = zCanvasEntityBase.extend({
   type: z.literal('regional_guidance'),
   position: zCoordinate,
@@ -329,6 +343,7 @@ const zCanvasEntityState = z.discriminatedUnion('type', [
   zCanvasRegionalGuidanceState,
   zCanvasInpaintMaskState,
   zCanvasReferenceImageState,
+  zCanvasTextLayerState,
 ]);
 export type CanvasEntityState = z.infer<typeof zCanvasEntityState>;
 
@@ -337,6 +352,7 @@ const zCanvasRenderableEntityState = z.discriminatedUnion('type', [
   zCanvasControlLayerState,
   zCanvasRegionalGuidanceState,
   zCanvasInpaintMaskState,
+  zCanvasTextLayerState,
 ]);
 export type CanvasRenderableEntityState = z.infer<typeof zCanvasRenderableEntityState>;
 export type CanvasRenderableEntityType = CanvasRenderableEntityState['type'];
@@ -347,6 +363,7 @@ const zCanvasEntityType = z.union([
   zCanvasRegionalGuidanceState.shape.type,
   zCanvasInpaintMaskState.shape.type,
   zCanvasReferenceImageState.shape.type,
+  zCanvasTextLayerState.shape.type,
 ]);
 export type CanvasEntityType = z.infer<typeof zCanvasEntityType>;
 
@@ -484,7 +501,8 @@ export function isRenderableEntityType(
     entityType === 'raster_layer' ||
     entityType === 'control_layer' ||
     entityType === 'regional_guidance' ||
-    entityType === 'inpaint_mask'
+    entityType === 'inpaint_mask' ||
+    entityType === 'text_layer'
   );
 }
 

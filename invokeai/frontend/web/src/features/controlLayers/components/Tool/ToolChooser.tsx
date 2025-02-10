@@ -6,6 +6,7 @@ import { ToolMoveButton } from 'features/controlLayers/components/Tool/ToolMoveB
 import { ToolRectButton } from 'features/controlLayers/components/Tool/ToolRectButton';
 
 import { ToolEraserButton } from './ToolEraserButton';
+import { ToolTextButton } from './ToolTextButton';
 import { ToolViewButton } from './ToolViewButton';
 
 export const ToolChooser: React.FC = () => {
@@ -19,6 +20,7 @@ export const ToolChooser: React.FC = () => {
         <ToolViewButton />
         <ToolBboxButton />
         <ToolColorPickerButton />
+        <ToolTextButton />
       </ButtonGroup>
     </>
   );

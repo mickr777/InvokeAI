@@ -7,6 +7,7 @@ import { CanvasEraserToolModule } from 'features/controlLayers/konva/CanvasTool/
 import { CanvasMoveToolModule } from 'features/controlLayers/konva/CanvasTool/CanvasMoveToolModule';
 import { CanvasRectToolModule } from 'features/controlLayers/konva/CanvasTool/CanvasRectToolModule';
 import { CanvasViewToolModule } from 'features/controlLayers/konva/CanvasTool/CanvasViewToolModule';
+import { CanvasTextToolModule } from 'features/controlLayers/konva/CanvasTool/CanvasTextToolModule';
 import {
   calculateNewBrushSizeFromWheelDelta,
   getIsPrimaryMouseDown,
@@ -64,6 +65,7 @@ export class CanvasToolModule extends CanvasModuleBase {
     bbox: CanvasBboxToolModule;
     view: CanvasViewToolModule;
     move: CanvasMoveToolModule;
+    text: CanvasTextToolModule;
   };
 
   /**
@@ -121,6 +123,7 @@ export class CanvasToolModule extends CanvasModuleBase {
       bbox: new CanvasBboxToolModule(this),
       view: new CanvasViewToolModule(this),
       move: new CanvasMoveToolModule(this),
+      text: new CanvasTextToolModule(this),
     };
 
     this.konva = {
@@ -195,6 +198,8 @@ export class CanvasToolModule extends CanvasModuleBase {
       this.tools.move.syncCursorStyle();
     } else if (tool === 'rect') {
       this.tools.rect.syncCursorStyle();
+    } else if (tool === 'text') {
+      stage.setCursor('text');
     } else {
       stage.setCursor('not-allowed');
     }
@@ -353,26 +358,28 @@ export class CanvasToolModule extends CanvasModuleBase {
     if (e.target !== this.konva.stage) {
       return;
     }
-
+  
     try {
       this.$lastPointerType.set(e.evt.pointerType);
-
+  
       if (!this.getCanDraw()) {
         return;
       }
-
+  
       this.$isPrimaryPointerDown.set(getIsPrimaryMouseDown(e));
-
       this.syncCursorPositions();
-
+  
       const tool = this.$tool.get();
-
+  
       if (tool === 'brush') {
         await this.tools.brush.onStagePointerDown(e);
       } else if (tool === 'eraser') {
         await this.tools.eraser.onStagePointerDown(e);
       } else if (tool === 'rect') {
         await this.tools.rect.onStagePointerDown(e);
+      } else if (tool === 'text') {
+        // Call the text tool's pointer down method
+        await this.tools.text.onStagePointerDown(e);
       }
     } finally {
       this.render();
