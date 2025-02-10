@@ -1,12 +1,11 @@
-import Konva from 'konva';
-import type { KonvaEventObject } from 'konva/lib/Node';
-import { createRoot } from 'react-dom/client';
-import type { Logger } from 'roarr';
-
 import type { CanvasManager } from 'features/controlLayers/konva/CanvasManager';
 import { CanvasModuleBase } from 'features/controlLayers/konva/CanvasModuleBase';
 import type { CanvasToolModule } from 'features/controlLayers/konva/CanvasTool/CanvasToolModule';
 import { getPrefixedId } from 'features/controlLayers/konva/util';
+import Konva from 'konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
+import { createRoot } from 'react-dom/client';
+import type { Logger } from 'roarr';
 
 import TextToolbar from './CanvasTextToolbar';
 
@@ -40,11 +39,8 @@ export class CanvasTextToolModule extends CanvasModuleBase {
     };
 
     const stage = this.manager.stage.konva.stage;
-    if (!stage) {
-      console.error('Stage is undefined in CanvasTextToolModule constructor.');
-    } else {
+    if (stage) {
       stage.add(this.konva.layer);
-      console.log('Added text layer to stage.');
     }
 
     this.transformer = new Konva.Transformer({
@@ -60,8 +56,6 @@ export class CanvasTextToolModule extends CanvasModuleBase {
   }
 
   onStagePointerDown = (e: KonvaEventObject<PointerEvent>) => {
-    console.log('Pointer Down Event:', e.evt);
-
     if (e.evt.button === 1 || e.evt.button === 2) {
       if (this.selectedTextElement) {
         this.deselectText();
@@ -72,7 +66,6 @@ export class CanvasTextToolModule extends CanvasModuleBase {
     const clickedText = e.target instanceof Konva.Text ? e.target : null;
 
     if (e.evt.button === 0 && e.evt.shiftKey) {
-      console.log('Shift + Click detected! Creating text...');
       this.createTextElement();
       return;
     }
@@ -88,35 +81,23 @@ export class CanvasTextToolModule extends CanvasModuleBase {
     this.selectedTextElement = null;
     this.transformer.nodes([]);
     this.removeToolbar();
-    const stage = this.manager.stage.konva.stage;
-    if (stage) stage.draw();
   };
 
   loadFont = async (fontName: string, fontPath: string): Promise<void> => {
-    console.log(`Loading font: ${fontName} from ${fontPath}`);
-    try {
-      const font = new FontFace(fontName, `url(${fontPath})`);
-      const loadedFont = await font.load();
-      document.fonts.add(loadedFont);
-      console.log(`Font loaded successfully: ${fontName}`);
-    } catch (err) {
-      console.error(`Error loading font ${fontName} from ${fontPath}:`, err);
-    }
+    const font = new FontFace(fontName, `url(${fontPath})`);
+    const loadedFont = await font.load();
+    document.fonts.add(loadedFont);
   };
 
   createTextElement = async () => {
-    console.log('Creating text element...');
     const stage = this.manager.stage.konva.stage;
     if (!stage) {
-      console.error('Stage is undefined in createTextElement.');
       return;
     }
     const localPos = stage.getRelativePointerPosition();
     if (!localPos) {
-      console.error('❌ Could not get pointer position.');
       return;
     }
-    console.log('✅ Raw text position:', localPos.x, localPos.y);
 
     const fontName = 'CustomFont';
     await this.loadFont(fontName, '/fonts/Roboto-Regular.ttf');
@@ -125,7 +106,6 @@ export class CanvasTextToolModule extends CanvasModuleBase {
     const stageHeight = stage.height();
     const clampedX = Math.max(10, Math.min(stageWidth - 50, localPos.x));
     const clampedY = Math.max(10, Math.min(stageHeight - 50, localPos.y));
-    console.log(`✅ Adjusted text position: (${clampedX}, ${clampedY})`);
 
     const textElement = new Konva.Text({
       x: clampedX,
@@ -140,38 +120,26 @@ export class CanvasTextToolModule extends CanvasModuleBase {
       visible: true,
       opacity: 1,
     });
-    console.log('✅ Text element created:', textElement);
 
     textElement.on('click', () => this.selectTextElement(textElement));
     textElement.on('dblclick', () => this.startEditingText(textElement));
 
-    if (textElement) {
-      this.konva.layer.add(textElement);
-      console.log('✅ Text element added to layer. Current children:', this.konva.layer.children);
-    } else {
-      console.error('Text element is undefined.');
-    }
-
+    this.konva.layer.add(textElement);
     if (textElement.getParent()) {
       textElement.moveToTop();
     }
     textElement.opacity(1);
     textElement.visible(true);
-    console.log('✅ Text element forced visible:', textElement.visible());
 
     stage.draw();
-    console.log('✅ Stage updated with new text');
 
     this.selectTextElement(textElement);
-    console.log('✅ Text element selected & toolbar shown');
   };
 
   selectTextElement = (textElement: Konva.Text) => {
     this.selectedTextElement = textElement;
-    if (textElement && textElement.getParent()) {
+    if (textElement.getParent()) {
       this.transformer.nodes([textElement]);
-    } else {
-      console.error('Cannot set transformer nodes: textElement or its parent is undefined.');
     }
 
     textElement.off('dblclick');
@@ -183,13 +151,14 @@ export class CanvasTextToolModule extends CanvasModuleBase {
   startEditingText = (textElement: Konva.Text) => {
     const stage = this.manager.stage.konva.stage;
     if (!stage) {
-      console.error('Stage is undefined in startEditingText.');
       return;
     }
     const textPosition = textElement.getAbsolutePosition();
     const stageBox = stage.container().getBoundingClientRect();
 
-    if (document.getElementById('text-editor')) return;
+    if (document.getElementById('text-editor')) {
+      return;
+    }
 
     textElement.visible(false);
     stage.draw();
@@ -219,8 +188,6 @@ export class CanvasTextToolModule extends CanvasModuleBase {
     editor.focus();
 
     editor.addEventListener('keydown', (event) => {
-      console.log(`Key pressed: ${event.key}`);
-
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         this.saveTextChanges(textElement, editor);
@@ -237,7 +204,9 @@ export class CanvasTextToolModule extends CanvasModuleBase {
       }
     });
 
-    editor.addEventListener('blur', () => this.saveTextChanges(textElement, editor));
+    editor.addEventListener('blur', () => {
+      this.saveTextChanges(textElement, editor);
+    });
   };
 
   saveTextChanges = (textElement: Konva.Text, editor: HTMLElement) => {
@@ -285,7 +254,9 @@ export class CanvasTextToolModule extends CanvasModuleBase {
 
   handleToolbarChange = (changes: { color?: string; fontStyle?: string; fontFamily?: string }) => {
     const selectedText = this.selectedTextElement;
-    if (!selectedText) return;
+    if (!selectedText) {
+      return;
+    }
 
     let needsUpdate = false;
 
@@ -311,7 +282,9 @@ export class CanvasTextToolModule extends CanvasModuleBase {
   };
 
   handleDelete = () => {
-    this.selectedTextElement?.remove();
+    if (this.selectedTextElement) {
+      this.selectedTextElement.remove();
+    }
     this.deselectText();
     this.manager.stage.konva.stage.draw();
   };
